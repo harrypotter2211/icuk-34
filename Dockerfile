@@ -6,7 +6,9 @@ WORKDIR /app
 COPY . .
 
 # Build the project and run tests (mvn verify runs tests + checks)
-RUN mvn clean verify
+ENV MAVEN_OPTS="-Xmx512m"
+RUN mvn clean verify -DforkCount=1 -DreuseForks=false
+
 
 # -------- Stage 2: Runtime image --------
 FROM openjdk:8-jdk-alpine
