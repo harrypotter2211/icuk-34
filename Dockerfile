@@ -2,23 +2,25 @@
 FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# Optimize dependencies layer
+# Copy pom and download dependencies first
 COPY pom.xml .
 RUN mvn dependency:go-offline
 
-# Copy source code
+# Copy the rest of the code
 COPY . .
 
-# Set memory limits and run tests without forking issues
+# Set JVM memory options
 ENV MAVEN_OPTS="-Xmx1024m"
-RUN mvn clean verify -DforkCount=1 -DreuseForks=false
+
+# Run tests with JaCoCo disabled to avoid crashes
+RUN mvn clean verify -Pno-jacoco -DforkCount=1 -DreuseForks=false
 
 # -------- Stage 2: Runtime --------
 FROM openjdk:8-jdk-alpine
 WORKDIR /app
 
-# Copy the built JAR file
+# Copy the JAR from the build stage
 COPY --from=build /app/target/demo-workshop-2.1.2.jar app.jar
 
-# Run the JAR
+# Start the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
