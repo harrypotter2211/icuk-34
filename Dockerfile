@@ -1,21 +1,24 @@
-# -------- Stage 1: Build and test --------
+# -------- Stage 1: Build & Test --------
 FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# Copy everything into the container
+# Optimize dependencies layer
+COPY pom.xml .
+RUN mvn dependency:go-offline
+
+# Copy source code
 COPY . .
 
-# Build the project and run tests (mvn verify runs tests + checks)
-ENV MAVEN_OPTS="-Xmx512m"
+# Set memory limits and run tests without forking issues
+ENV MAVEN_OPTS="-Xmx1024m"
 RUN mvn clean verify -DforkCount=1 -DreuseForks=false
 
-
-# -------- Stage 2: Runtime image --------
+# -------- Stage 2: Runtime --------
 FROM openjdk:8-jdk-alpine
 WORKDIR /app
 
-# Copy the built JAR from the previous stage
+# Copy the built JAR file
 COPY --from=build /app/target/demo-workshop-2.1.2.jar app.jar
 
-# Run the application
+# Run the JAR
 ENTRYPOINT ["java", "-jar", "app.jar"]
